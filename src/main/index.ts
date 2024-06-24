@@ -1,7 +1,9 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { BrowserWindow, app, ipcMain, shell } from 'electron'
+import { electronApp, optimizer } from '@electron-toolkit/utils'
+
 import icon from '../../resources/icon.png?asset'
+import { join } from 'path'
+import { resolveHtmlPath } from '../../src/utils'
 
 function createWindow(): void {
   // Create the browser window.
@@ -28,12 +30,58 @@ function createWindow(): void {
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  // if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+  //   mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+  // } else {
+  //   mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  // }
+  mainWindow.loadURL(resolveHtmlPath('/'))
 }
+
+// function createPresentationWindow(): void {
+//   // Create the presentation window.
+
+// }
+
+ipcMain.on('start-presentation', () => {
+  const presentationWindow = new BrowserWindow({
+    width: 900,
+    height: 670,
+    resizable: true,
+    show: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      enableWebSQL: true
+    }
+  })
+
+  // HMR for renderer base on electron-vite cli.
+  // Load the remote URL for development or the local html file for production.
+  // if (process.env.ELECTRON_RENDERER_URL_PRESENTATION) {
+  presentationWindow.loadURL(resolveHtmlPath('/presentation'))
+  // }
+  // } else {
+  //   presentationWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  // }
+  presentationWindow.on('ready-to-show', () => {
+    presentationWindow.show()
+  })
+
+  presentationWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+})
+
+// ipcMain.on('stop-presentation', () => {
+//   if (presentationWindow) {
+//     presentationWindow.close()
+//     presentationWindow = null
+//   }
+// })
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -69,6 +117,3 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.

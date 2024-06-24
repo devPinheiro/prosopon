@@ -1,8 +1,24 @@
+import { Link } from 'react-router-dom'
 import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
+import { setLyrics } from './store/slices/songSlice'
+import { useDispatch } from 'react-redux'
 
 function App(): JSX.Element {
+  const dispatch = useDispatch()
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const handleStartPresentation = (): void => {
+    window.electron.ipcRenderer.send('start-presentation'), 
+    
+    dispatch(setLyrics(lyrics))
+  }
+
+  const lyrics = [
+    'Amazing grace! How sweet the sound',
+    'That saved a wretch like me.',
+    'I once was lost, but now am found;',
+    'Was blind, but now I see.'
+  ]
 
   return (
     <>
@@ -16,15 +32,20 @@ function App(): JSX.Element {
         Please try pressing <code>F12</code> to open the devTool
       </p>
       <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
+        <button
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          onClick={handleStartPresentation}
+        >
+          Start Presentation
+        </button>
+
         <div className="action">
           <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
             Send IPC
           </a>
+        </div>
+        <div className="action">
+          <Link to={'/presentation'}>Present</Link>
         </div>
       </div>
       <Versions></Versions>
