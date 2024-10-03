@@ -11,7 +11,7 @@ const initialState: SongState = {
 }
 
 const songSlice = createSlice({
-  name: 'song',
+  name: 'songs',
   initialState,
   reducers: {
     setLyrics: (state, action: PayloadAction<string[]>) => {

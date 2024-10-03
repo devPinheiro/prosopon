@@ -4,7 +4,43 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { join } from 'path'
 import { resolveHtmlPath } from '../../src/utils'
+import { configureStore } from '@reduxjs/toolkit'
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  // persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE
+} from 'redux-persist'
+import appReducer from '../renderer/src/store/rootReducers'
+// import ElectronStore from 'electron-store'
+// import createElectronStorage from 'redux-persist-electron-storage'
+// import { persistor } from '../../src/renderer/src/store'
 
+// Electron Store
+// const store = new ElectronStore()
+
+// const persistConfig = {
+//   key: 'root',
+//   storage: createElectronStorage({ electronStore: store })
+// }
+
+// const persistedReducer = persistReducer(persistConfig, appReducer)
+const reduxStore = configureStore({
+  reducer: appReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore all actions that redux-persist has
+        // https://redux-toolkit.js.org/usage/usage-guide#use-with-redux-persist
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER]
+      }
+    })
+})
+const persistor = persistStore(reduxStore)
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -15,7 +51,8 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      nodeIntegration: true
     }
   })
 
@@ -36,12 +73,28 @@ function createWindow(): void {
   //   mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   // }
   mainWindow.loadURL(resolveHtmlPath('/'))
+
+  // Send the initial state to the renderer
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('persistor.getState() ====>', reduxStore.getState());
+    
+    mainWindow.webContents.send('redux-initial-state', persistor.getState())
+  })
 }
 
 // function createPresentationWindow(): void {
 //   // Create the presentation window.
 
 // }
+
+// Listen for actions from renderer processes
+ipcMain.on('redux-action', (event, action) => {
+  persistor.dispatch(action)
+  // Broadcast the new state to all renderer processes
+  BrowserWindow.getAllWindows().forEach((win) => {
+    win.webContents.send('redux-state-update', persistor.getState())
+  })
+})
 
 ipcMain.on('start-presentation', () => {
   const presentationWindow = new BrowserWindow({
@@ -74,6 +127,8 @@ ipcMain.on('start-presentation', () => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
+
+  console.log('persistor.getState() ====>', reduxStore.getState());
 })
 
 // ipcMain.on('stop-presentation', () => {

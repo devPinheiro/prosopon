@@ -8,9 +8,9 @@ function App(): JSX.Element {
   const dispatch = useDispatch()
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
   const handleStartPresentation = (): void => {
-    window.electron.ipcRenderer.send('start-presentation'), 
-    
     dispatch(setLyrics(lyrics))
+    window.electron.ipcRenderer.send('start-presentation')
+    
   }
 
   const lyrics = [

@@ -7,14 +7,16 @@ import { Link } from 'react-router-dom'
 import React from 'react'
 
 const PresentationViewer: React.FC = () => {
-  const { lyrics, currentLine } = useSelector((state: AppState) => state.songs)
+  const state= useSelector((state: AppState) => state)
   const dispatch = useDispatch()
+  console.log('lyrics=======>', state.songs);
+  
   return (
     <div className="flex items-center justify-center h-screen bg-black text-white text-3xl">
       <TransitionGroup>
-        <CSSTransition key={currentLine} timeout={500} classNames="fade">
+        {/* <CSSTransition key={currentLine} timeout={500} classNames="fade">
           <div>{lyrics[currentLine]}</div>
-        </CSSTransition>
+        </CSSTransition> */}
       </TransitionGroup>
 
       <div className="action">
